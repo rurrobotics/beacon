@@ -1,3 +1,3 @@
 # Beacon kod
 
-Kod koji se spušta na RPI5
+Kod za Beacon koji se spušta na RPI5
