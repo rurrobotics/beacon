@@ -3,7 +3,7 @@
 U `src` folderu se nalazi ceo Python kod za Beacon na Eurobot 2027 takmičenju.
 
 ## Komunikacija između Beacona i Sima
-Odrađeno je testiranje koomunikacije između RPI5 i RPico, gde RPI5 šalje određen broj paketa veličine oko 16 bajtova određenom brzinom i RPico javi nazad koliko je paketa primio. Oba su povezana na 2.4GHz Hotspot sa laptopa.
+Odrađeno je testiranje komunikacije između RPI5 i RPico, gde RPI5 šalje određen broj paketa veličine oko 16 bajtova određenom brzinom i RPico javi nazad koliko je paketa primio. Oba su povezana na 2.4GHz Hotspot sa laptopa.
 
 Beacon treba Simama da šalje pakete informacija o tome gde se nalaze protivničke Sime, dakle dovoljno je pustiti u rad poslednjih 15 sekundi meča i slati nekoliko paketa u sekundi, i korisno je (bar meni) videti koliko dobro ova komunikacija može da radi u zavisnosti od brzine slanja.
 
