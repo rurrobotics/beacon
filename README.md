@@ -29,3 +29,22 @@ Dalje sledi analiza rezultata koja samo meni lično znači da vidim koliko će o
 | 5 |  |  |
 | 10 |  |  |
 | 20 |  |  |
+
+------------------------------------------------------------------------
+
+RPi5 Pico-u šalje informacije o svim Simama na tabli. Broj Sima ne mora biti unapred poznat broj, neki tim može imati 4, drugi nijednu, itd. Iz tog razloga je potrebno definisati maksimalan broj Sima koji mogu da se nalaze na tabli, i da u toku partije, na osnovu broja ID-jeva koje kamera detektuje, pošalje toliko paketa o informacijama.
+
+Paketi se šalju tako što se spakuju u bajtove preko ```struct.pack()``` i ```struct.unpack()``` u low-endian formatu (u principu je svejedno, ali ovako RPi5 i RPico pakuju podatke), i sastoje se iz dva dela: Header-a i Entry-ja.
+
+### Header
+| Polje | Format | Broj bajtova | Šta predstavlja |
+| --- | --- | --- | --- |
+| Tip paketa | Unsigned Byte (B) | 1 |  |
+| Verzija | Unsigned Byte (B) | 1 |  |
+| Redni broj paketa | Unsigned Integer (I) | 4 |  |
+| Starost | Unsigned Short (H) | 2 |  |
+| Broj Sima | Unsigned Byte (B) | 1 |  |
+
+### Entry
+| Polje | Format | Broj bajtova | Šta predstavlja |
+| --- | --- | --- | --- |
