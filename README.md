@@ -2,35 +2,17 @@
 
 U `src` folderu se nalazi ceo Python kod za Beacon na Eurobot 2027 takmičenju.
 
+## Kamera
+
+Prvo je potrebno izmeniti perspektivu kamere tako da se pikseli poklapaju sa milimetražom table. To se radi na osnovu ID-jeva na tabli.
+
+ID-jevi su ArUco tagovi, i detektuju se koristeći OpenCV biblioteku.
+
+Kamera detektuje položaj protivničkih Sima u poslednjih 15 sekundi, tako što pronalazi ID-jeve i pretvara očitane pikseleu milimetre na tabli. Podaci koji se očitaju sa kamere šalju se na Sime preko komunikacije opisane kasnije.
+
 ## Komunikacija između Beacona i Sima
-Odrađeno je testiranje komunikacije između RPI5 i RPico, gde RPI5 šalje određen broj paketa veličine oko 16 bajtova određenom brzinom i RPico javi nazad koliko je paketa primio. Oba su povezana na 2.4GHz Hotspot sa laptopa.
 
-Beacon treba Simama da šalje pakete informacija o tome gde se nalaze protivničke Sime, dakle dovoljno je pustiti u rad poslednjih 15 sekundi meča i slati nekoliko paketa u sekundi, i korisno je (bar meni) videti koliko dobro ova komunikacija može da radi u zavisnosti od brzine slanja.
-
-Realan cilj je da šaljemo paket na svake 0.2 sekunde bez ikakvih gubitaka.
-
-Dalje sledi analiza rezultata koja samo meni lično znači da vidim koliko će ovo dobro raditi na 2.4GHz i verovatno ću obrisati iz README posle :)
-
-### Kanc - nema smetnji
-| Brzina slanja [pkt/s] | Najduže vreme između paketa [ms] | Success Rate [%] |
-| --- | --- | --- |
-| 1 | 1033ms | 100.00% |
-| 5 | 244ms | 100.00% |
-| 10 | 203ms | 100.00% |
-| 20 | 76ms | 100.00% |
-
-**Zaključak:** Kanc je bomba!
-
-
-### Promenada - smetnje epskih veličina
-| Brzina slanja [pkt/s] | Najduže vreme između paketa | Success Rate [%] |
-| --- | --- | --- |
-| 1 |  |  |
-| 5 |  |  |
-| 10 |  |  |
-| 20 |  |  |
-
-------------------------------------------------------------------------
+Između TCP i UDP, odabran je protokol UDP radi brzine. Iako postoji rizik gubljenja paketa, nije nam preterano bitno, jer se paketi šalju na svakih 200ms.
 
 RPi5 Pico-u šalje informacije o svim Simama na tabli. Broj Sima ne mora biti unapred poznat broj, neki tim može imati 4, drugi nijednu, itd. Iz tog razloga je potrebno definisati maksimalan broj Sima koji mogu da se nalaze na tabli, i da u toku partije, na osnovu broja ID-jeva koje kamera detektuje, pošalje toliko paketa o informacijama.
 
