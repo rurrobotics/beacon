@@ -9,9 +9,9 @@ _latest = None                  # najnoviji frejm
 _lock = threading.Lock()
 
 # 4 ID u uglovima
-PIXEL_POINTS = np.float32()
-TABLE_POINTS = np.float32()
-H = cv2.getPerspectiveTransform(PIXEL_POINTS, TABLE_POINTS)
+#PIXEL_POINTS = np.float32()
+#TABLE_POINTS = np.float32()
+#H = cv2.getPerspectiveTransform(PIXEL_POINTS, TABLE_POINTS)
 
 def pixel_to_mm(px, py):
     p = cv2.perspectiveTransform(np.float32([[[px, py]]]), H)[0][0]

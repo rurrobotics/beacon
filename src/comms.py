@@ -9,8 +9,8 @@ import threading
 
 # imena varijabli koje pocinju sa _ su interne u fajlu
 
-PICOS = [("192.168.137.17", 5005)] # bice ih jos u buducnosti
-RATE = 5                # 5Hz, 5 paketa u sekundi
+PICOS = [("192.168.137.169", 5005)] # bice ih jos u buducnosti
+RATE = 5                            # 5Hz, 5 paketa u sekundi
 MAX_SIMA = 6
 
 HDR = "<BBIB"
@@ -36,6 +36,7 @@ def make_packet(seq, simas):
     return pkt
 
 def _sender_loop():
+    print("usao")
     interval = 1.0 / RATE
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.setblocking(False)

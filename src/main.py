@@ -2,12 +2,16 @@ import time
 
 import comms
 import camera
+import random
 
 comms.start_sender()
 
 try:
-    #camera.run(detected=comms.set_simas)                   # kada se uspostavi kamera
-    comms.set_simas([(1, 500, 800), (2, 2100, 300), (3, 210, 305), (4, 100, 1300), (5, 2000, 300)])        # random
+    while True:
+        #camera.run(detected=comms.set_simas)                   # kada se uspostavi kamera
+        comms.set_simas([(i, random.randint(0, 3000), random.randint(0, 2000))
+                         for i in range(1, 6)])        # random
+        time.sleep(0.2)
 except KeyboardInterrupt:
     pass
 finally:
