@@ -1,64 +1,77 @@
 import socket
 import time
 import struct
+import threading
 
-# slanje paketa i testiranje koliko je izgubljeno
+# slanje paketa koordinata sima
+# 1. HDR - tip, verzija, rb paketa, br sima
+# 2. ENT - id, x_mm, y_mm
 
-def run(stop):
-    PICO = ("192.168.137.17", 5005)
-    RATE = 20
-    N = RATE * 15   # broj paketa je brzina * 15s trajanje slanja
-    PAYLOAD = 16
+# imena varijabli koje pocinju sa _ su interne u fajlu
 
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    try:
-        send_errors = 0
-        pad = b"x" * PAYLOAD
-        interval = 1.0 / RATE
-        start = time.perf_counter()
+PICOS = [("192.168.137.17", 5005)] # bice ih jos u buducnosti
+RATE = 5                # 5Hz, 5 paketa u sekundi
+MAX_SIMA = 6
 
-        sent = 0
-        for seq in range(N):
-            if stop.is_set():
-                break
+HDR = "<BBIB"
+ENT = "<Bhh"
+
+_latest = []                # kamera detektuje sve vreme, paket se salje na svakih 200ms, treba da posalje poslednje
+_lock = threading.Lock()
+_stop = threading.Event()
+_thread = None
+
+
+def set_simas(simas):
+    # iz camera.py
+    global _latest
+    with _lock:
+        _latest = list(simas)
+
+def make_packet(seq, simas):
+    simas = simas[:MAX_SIMA]
+    pkt = struct.pack(HDR, 2, 0, seq, len(simas))
+    for sid, x_mm, y_mm in simas:
+        pkt += struct.pack(ENT, sid, x_mm, y_mm)
+    return pkt
+
+def _sender_loop():
+    interval = 1.0 / RATE
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.setblocking(False)
+    seq = 0
+    next_t = time.perf_counter()
+
+    while not _stop.is_set():
+        with _lock:
+            simas = list(_latest)
+
+        pkt = make_packet(seq, simas)
+        for addr in PICOS:
             try:
-                sock.sendto(struct.pack("<BI", 0, seq) + pad, PICO)
+                s.sendto(pkt, addr)
             except OSError:
-                send_errors += 1
-            sent += 1
-
-            target = start + (seq + 1) * interval
-            delay = target - time.perf_counter()
-            if delay > 0 and stop.wait(delay):   # sleeps, but wakes on stop
-                break
-
-        if stop.is_set():
-            return
-
-        elapsed = time.perf_counter() - start
-        stop.wait(0.3)
-
-        sock.settimeout(0.5)  # da ne freezuje script
-        stats = None
-        for _ in range(10):
-            if stop.is_set():
-                return
-            sock.sendto(struct.pack("<BI", 1, 0) + pad, PICO)
-            try:
-                data, _ = sock.recvfrom(64)
-                stats = data.decode().split(",")
-                break
-            except socket.timeout:
                 pass
+        seq += 1
 
-        if stats:
-            got = int(stats[0])
-            max_gap = int(stats[2])
-            print(f"sent {N} in {elapsed:.2f}s ({N/elapsed:.0f} pkt/s), send errors: {send_errors}")
-            print(f"received {got}, lost {N-got} ({(N-got)/N*100:.2f}%)")
-            print(f"longest gap between packets {max_gap}ms "
-                  f"({max(0, round(max_gap / (interval * 1000)) - 1)} lost in a row)")
+        next_t += interval
+        delay = next_t - time.perf_counter()        # moze i samo time.sleep(interval), ali i instrukcijama je potrebno vreme da se izvrse i ovako je precizno 200ms
+        if delay > 0:
+            time.sleep(delay)
         else:
-            print("No stats reply from Pico")
-    finally:
-        sock.close()
+            next_t = time.perf_counter()
+
+    s.close()
+
+def start_sender():
+    global _thread
+    if _thread and _thread.is_alive():
+        return
+    _stop.clear()
+    _thread = threading.Thread(target=_sender_loop, daemon=True)
+    _thread.start()
+
+def stop_sender():
+    _stop.set()
+    if _thread:
+        _thread.join(timeout=1)

@@ -1,11 +1,21 @@
 import cv2
 import time
 import threading
+import numpy as np
 from flask import Flask, Response
 
 app = Flask(__name__)
 _latest = None                  # najnoviji frejm
 _lock = threading.Lock()
+
+# 4 ID u uglovima
+PIXEL_POINTS = np.float32()
+TABLE_POINTS = np.float32()
+H = cv2.getPerspectiveTransform(PIXEL_POINTS, TABLE_POINTS)
+
+def pixel_to_mm(px, py):
+    p = cv2.perspectiveTransform(np.float32([[[px, py]]]), H)[0][0]
+    return int(p[0]), int(p[1])
 
 def id_detection():
     aruco = cv2.aruco
@@ -39,7 +49,8 @@ def stream():
             time.sleep(0.03)
     return Response(gen(), mimetype="multipart/x-mixed-replace; boundary=frame")
 
-def run(stop, ids_q=None):
+def run(detected=None):
+    # vrti se zauvek u mainu
     global _latest
 
     threading.Thread(
@@ -50,7 +61,7 @@ def run(stop, ids_q=None):
     cap = open_camera()
 
     try:
-        while not stop.is_set():
+        while True:
             ok, frame = cap.read()
             if not ok:
                 print("No frame")
@@ -59,15 +70,16 @@ def run(stop, ids_q=None):
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             corners, ids = detect(gray)
 
+            found = []
             if ids is not None:
                 cv2.aruco.drawDetectedMarkers(frame, corners, ids)
-                found = ids.flatten().tolist()
-                print("IDs:", found)
-                if ids_q is not None:
-                    try:
-                        ids_q.put_nowait((time.time(), found))
-                    except Exception:
-                        pass 
+                for c, i in zip(corners, ids.flatten()):
+                    cx, cy = c[0].mean(axis=0)  # koordinate u odnosu na centar id polja
+                    x, y = pixel_to_mm(cx, cy)
+                    found.append((int(i), x, y))
+
+            if detected is not None:
+                detected(found)
 
             ok, jpg = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 70])
             if ok:

@@ -36,15 +36,19 @@ RPi5 Pico-u šalje informacije o svim Simama na tabli. Broj Sima ne mora biti un
 
 Paketi se šalju tako što se spakuju u bajtove preko ```struct.pack()``` i ```struct.unpack()``` u low-endian formatu (u principu je svejedno, ali ovako RPi5 i RPico pakuju podatke), i sastoje se iz dva dela: Header-a i Entry-ja.
 
-### Header
-| Polje | Format | Broj bajtova | Šta predstavlja |
-| --- | --- | --- | --- |
-| Tip paketa | Unsigned Byte (B) | 1 |  |
-| Verzija | Unsigned Byte (B) | 1 |  |
-| Redni broj paketa | Unsigned Integer (I) | 4 |  |
-| Starost | Unsigned Short (H) | 2 |  |
-| Broj Sima | Unsigned Byte (B) | 1 |  |
+### Header ("<BBIB")
+| Polje | Značenje | Format | Broj bajtova |  |
+| --- | --- | --- | --- | --- |
+| ```type``` | Tip paketa | Unsigned Byte (B) | 1 | U slučaju da u budućnosti šaljemo više paketa na Pico, da ih razlikuje. U ovom slučaju za koordinate Sima je 0 |
+| ```version``` | Verzija | Unsigned Byte (B) | 1 | Verzija izmene u slučaju da se u budućnosti doda nešto, da Pico zna da treba da odbaci staro |
+| ```seq``` | Redni broj paketa | Unsigned Integer (I) | 4 | Ignorišu se stari paketi i duplikati |
+| ```n``` | Broj Sima | Unsigned Byte (B) | 1 | Koliko Sima Beacon vidi |
 
-### Entry
-| Polje | Format | Broj bajtova | Šta predstavlja |
-| --- | --- | --- | --- |
+### Entry ("<Bhh")
+| Polje | Značenje | Format | Broj bajtova |  |
+| --- | --- | --- | --- | --- |
+| ```id``` | ID Sime | Unsigned Byte (B) | 1 | Koja je Sima u pitanju |
+| ```x_mm``` | X koordinata [mm] | Signed Short (h) | 2 | 0 - 3000 mm |
+| ```y_mm``` | Y koordinata [mm] | Signed Short (h) | 2 |0 - 2000 mm |
+
+Ukupna veličina paketa je 7 + n * 5 bajtova. Najveći broj protivničkih Sima koji mogu da se nađu na stolu je 6, dakle najveći broj bajtova koje RPi5 šalje na Pico je 37 (odnosno 64 bajtova zaokruženo)
