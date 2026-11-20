@@ -1,36 +1,54 @@
 # Beacon - Eurobot 2027
 
-U `src` folderu se nalazi ceo Python kod za Beacon na Eurobot 2027 takmičenju.
+[Srpski](README.sr.md)
 
-## Kamera
+The `beacon` folder contains all of the Python code (the `beacon` package) for the Beacon at the Eurobot 2027 competition.
 
-Prvo je potrebno izmeniti perspektivu kamere tako da se pikseli poklapaju sa milimetražom table. To se radi na osnovu ID-jeva na tabli.
+## Installation and running
 
-ID-jevi su ArUco tagovi, i detektuju se koristeći OpenCV biblioteku.
+```sh
+python -m venv .venv
+source .venv/bin/activate
+pip install -e .
+```
 
-Kamera detektuje položaj protivničkih Sima u poslednjih 15 sekundi, tako što pronalazi ID-jeve i pretvara očitane pikseleu milimetre na tabli. Podaci koji se očitaju sa kamere šalju se na Sime preko komunikacije opisane kasnije.
+Running:
 
-## Komunikacija između Beacona i Sima
+```sh
+beacon
+# or
+python -m beacon
+```
 
-Između TCP i UDP, odabran je protokol UDP radi brzine. Iako postoji rizik gubljenja paketa, nije nam preterano bitno, jer se paketi šalju na svakih 200ms.
+## Camera
 
-RPi5 Pico-u šalje informacije o svim Simama na tabli. Broj Sima ne mora biti unapred poznat broj, neki tim može imati 4, drugi nijednu, itd. Iz tog razloga je potrebno definisati maksimalan broj Sima koji mogu da se nalaze na tabli, i da u toku partije, na osnovu broja ID-jeva koje kamera detektuje, pošalje toliko paketa o informacijama.
+First, the camera's perspective has to be transformed so that pixels match the table's millimeter grid. This is done using the IDs on the table.
 
-Paketi se šalju tako što se spakuju u bajtove preko ```struct.pack()``` i ```struct.unpack()``` u low-endian formatu (u principu je svejedno, ali ovako RPi5 i RPico pakuju podatke), i sastoje se iz dva dela: Header-a i Entry-ja.
+The IDs are ArUco tags, and they are detected using the OpenCV library.
+
+During the last 15 seconds, the camera detects the positions of the opponent's SIMAs by finding their IDs and converting the detected pixels into millimeters on the table. The data read from the camera is sent to the SIMAs using the communication described below.
+
+## Communication between the Beacon and the SIMAs
+
+UDP was chosen over TCP for speed. Although there is a risk of packet loss, it doesn't matter much to us, because packets are sent every 200 ms.
+
+The RPi5 sends the Pico information about all SIMAs on the table. The number of SIMAs isn't known in advance: one team might have 4, another none, and so on. For that reason, a maximum number of SIMAs that can be on the table has to be defined, and during the match the RPi5 sends entries for as many SIMAs as the camera detects IDs.
+
+Packets are packed into bytes with ```struct.pack()``` and ```struct.unpack()``` in little-endian format (it doesn't really matter, but this is how the RPi5 and the Pico pack data), and they consist of two parts: a Header and Entries.
 
 ### Header ("<BBIB")
-| Polje | Značenje | Format | Broj bajtova |  |
+| Field | Meaning | Format | Bytes |  |
 | --- | --- | --- | --- | --- |
-| ```type``` | Tip paketa | Unsigned Byte (B) | 1 | U slučaju da u budućnosti šaljemo više paketa na Pico, da ih razlikuje. U ovom slučaju za koordinate Sima je 0 |
-| ```version``` | Verzija | Unsigned Byte (B) | 1 | Verzija izmene u slučaju da se u budućnosti doda nešto, da Pico zna da treba da odbaci staro |
-| ```seq``` | Redni broj paketa | Unsigned Integer (I) | 4 | Ignorišu se stari paketi i duplikati |
-| ```n``` | Broj Sima | Unsigned Byte (B) | 1 | Koliko Sima Beacon vidi |
+| ```type``` | Packet type | Unsigned Byte (B) | 1 | Distinguishes packet types in case we send more kinds of packets to the Pico in the future. For SIMA coordinates it is 2 |
+| ```version``` | Version | Unsigned Byte (B) | 1 | Format version, so that if something is added in the future, the Pico knows to discard the old format |
+| ```seq``` | Packet sequence number | Unsigned Integer (I) | 4 | Old packets and duplicates are ignored |
+| ```n``` | Number of SIMAs | Unsigned Byte (B) | 1 | How many SIMAs the Beacon sees |
 
 ### Entry ("<Bhh")
-| Polje | Značenje | Format | Broj bajtova |  |
+| Field | Meaning | Format | Bytes |  |
 | --- | --- | --- | --- | --- |
-| ```id``` | ID Sime | Unsigned Byte (B) | 1 | Koja je Sima u pitanju |
-| ```x_mm``` | X koordinata [mm] | Signed Short (h) | 2 | 0 - 3000 mm |
-| ```y_mm``` | Y koordinata [mm] | Signed Short (h) | 2 |0 - 2000 mm |
+| ```id``` | SIMA ID | Unsigned Byte (B) | 1 | Which SIMA it is |
+| ```x_mm``` | X coordinate [mm] | Signed Short (h) | 2 | 0 - 3000 mm |
+| ```y_mm``` | Y coordinate [mm] | Signed Short (h) | 2 | 0 - 2000 mm |
 
-Ukupna veličina paketa je 7 + n * 5 bajtova. Najveći broj protivničkih Sima koji mogu da se nađu na stolu je 6, dakle najveći broj bajtova koje RPi5 šalje na Pico je 37 (odnosno 64 bajtova zaokruženo)
+The total packet size is 7 + n * 5 bytes. The maximum number of opponent SIMAs that can be on the table is 6, so the largest packet the RPi5 sends to the Pico is 37 bytes (64 bytes when rounded up).
