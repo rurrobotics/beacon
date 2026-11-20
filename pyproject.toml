@@ -1,9 +1,9 @@
 [project]
 name = "beacon"
 version = "0.1.0"
-description = ""
+description = "ArUco-based SIMA tracking with UDP position broadcast."
 authors = [
-    {name = "doedarnma",email = "tamara.taca.radmilovic@gmail.com"}
+    {name = "doedarnma", email = "tamara.taca.radmilovic@gmail.com"}
 ]
 readme = "README.md"
 requires-python = ">=3.14"
